@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#faf7f0"><title>ルーレット | 抽選デモ</title><style>
+:root{color-scheme:light;--ink:#203d34;--muted:#617269;--accent:#23624d;--paper:#faf7f0;--gold:#bc843a}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.7}main{width:min(100%,520px);margin:auto;padding:24px 20px 36px}a{color:var(--accent);text-underline-offset:4px}.back{font-size:14px;display:inline-block;padding:8px 0;min-height:44px}.eyebrow{font-size:11px;letter-spacing:.18em;color:var(--muted);margin:18px 0 8px}h1{font-size:30px;line-height:1.35;margin:0 0 10px;letter-spacing:.04em}.lead{font-size:14px;color:var(--muted);margin:0 0 20px}.badge{display:inline-block;font-size:11px;font-weight:700;border:1px solid #d8c5a5;color:#785321;border-radius:20px;padding:3px 10px;margin-bottom:12px}.stage{position:relative;background:#fff;border:1px solid #e0e5dc;border-radius:24px;padding:24px 14px;box-shadow:0 12px 35px #284b3510}.visual{width:min(100%,300px);margin:auto;position:relative}svg{display:block;width:100%;height:auto;overflow:visible}.pointer{position:absolute;z-index:2;left:calc(50% - 10px);top:-4px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:22px solid #203d34}.wheel{transform-origin:center;transition:transform 2.2s cubic-bezier(.16,.7,.12,1)}button{font:inherit;cursor:pointer;touch-action:manipulation}.start{display:block;width:100%;border:0;border-radius:14px;background:var(--accent);color:white;min-height:56px;padding:13px 20px;font-size:18px;font-weight:700;margin-top:22px;box-shadow:0 5px 0 #174332}.start:disabled{background:#74877a;box-shadow:none;cursor:default}.result{min-height:62px;text-align:center;padding-top:20px;font-size:20px;font-weight:700}.note{font-size:12px;color:var(--muted);margin-top:20px}.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}.choice{min-height:54px;border:1px solid #c7d6c9;border-radius:12px;background:#f4f7f1;color:var(--ink)}.choice[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}.choice:disabled{cursor:default}.hint{font-size:13px;text-align:center;color:var(--muted);margin:0}.ticket{width:150px;height:170px;margin:18px auto;border-radius:14px;background:#e9d5ad;display:grid;place-content:center;font-size:50px;border:2px dashed #9e773f;color:#624c2c;transition:transform .5s}.drawing{animation:shake .18s infinite alternate}.result-card{background:#f2f7ef;color:#23624d;border:2px solid #9db69d;transform:rotate(-5deg)}@keyframes shake{to{transform:rotate(6deg)}}.menu{display:grid;gap:14px;margin:24px 0}.menu a{background:white;border:1px solid #dbe2d7;border-radius:18px;padding:20px;text-decoration:none;color:var(--ink)}.menu strong{display:block;font-size:21px}.menu span{display:block;font-size:13px;color:var(--muted);margin-top:6px}:focus-visible{outline:3px solid var(--gold);outline-offset:4px}[hidden]{display:none!important}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style></head>
+<body><main><a class="back" href="../">← 抽選一覧へ</a><div class="eyebrow">A LITTLE MOMENT OF LUCK</div><span class="badge">体験デモ・景品なし</span><h1>ルーレット</h1><p class="lead">ボタンを押すと回転します。どの番号で止まるかな？</p><section class="stage" aria-label="ルーレット"><div class="visual"><div class="pointer" aria-hidden="true"></div><svg id="wheel" class="wheel" viewBox="0 0 300 300" role="img" aria-label="1から6のルーレット"></svg></div><button class="start" id="start" type="button">スタート</button><div class="result" id="result" role="status" aria-live="polite" aria-atomic="true">準備ができたらスタート</div></section><p class="note">この画面は動作確認用です。表示される番号に景品は設定されていません。口コミ投稿の有無は抽選に関係ありません。</p><noscript>JavaScriptを有効にしてご利用ください。</noscript></main><script>
+'use strict';
+// 景品未設定のデモ。すべての結果は番号のみで、景品の当選を意味しません。
+function randomInt(n) {
+  if (!Number.isSafeInteger(n) || n < 1 || n > 0x100000000) throw new Error('乱数範囲が不正です');
+  const limit = Math.floor(0x100000000 / n) * n;
+  const buffer = new Uint32Array(1);
+  do { crypto.getRandomValues(buffer); } while (buffer[0] >= limit);
+  return buffer[0] % n;
+}
+function shuffled(values) {
+  const copy = values.slice();
+  for (let i = copy.length - 1; i > 0; i--) { const j = randomInt(i + 1); [copy[i], copy[j]] = [copy[j], copy[i]]; }
+  return copy;
+}
+const start = document.getElementById('start');
+const result = document.getElementById('result');
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let busy = false;
+function begin() {
+  if (busy) return false;
+  busy = true; start.disabled = true; start.textContent = '抽選中…';
+  result.textContent = '結果をお待ちください';
+  document.querySelectorAll('.choice').forEach(button => button.disabled = true);
+  return true;
+}
+function finish(number) {
+  result.textContent = 'デモ結果：' + number + ' 番';
+  start.textContent = 'もう一度試す'; start.disabled = false; busy = false;
+  document.querySelectorAll('.choice').forEach(button => button.disabled = false);
+}
+function fail(error) {
+  console.error(error); result.textContent = '抽選できませんでした。ページを開き直してください。';
+  start.textContent = '利用できません'; start.disabled = true;
+}
+function choose(buttons, onChoose) {
+  buttons.forEach((button, index) => button.addEventListener('click', () => {
+    if (busy) return;
+    buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    onChoose(index);
+  }));
+}
+
+
+const wheel = document.getElementById('wheel');
+const NS = 'http://www.w3.org/2000/svg';
+function wheelElement(tag, attributes, label) {
+  const el = document.createElementNS(NS, tag);
+  Object.entries(attributes).forEach(([key,value]) => el.setAttribute(key,value));
+  if (label) el.textContent = label;
+  wheel.append(el);
+}
+for (let i = 0; i < 6; i++) {
+  const a = (i * 60 - 90) * Math.PI / 180, b = a + Math.PI / 3;
+  const x = angle => 150 + 138 * Math.cos(angle), y = angle => 150 + 138 * Math.sin(angle);
+  wheelElement('path', {d:`M150 150 L${x(a)} ${y(a)} A138 138 0 0 1 ${x(b)} ${y(b)} Z`, fill:['#e9d6b0','#d5e3c9','#f3e9d4','#b9d0b7','#edd0b9','#dce8d9'][i],stroke:'#fff','stroke-width':3});
+  wheelElement('text', {x:150+96*Math.cos(a+Math.PI/6),y:150+96*Math.sin(a+Math.PI/6),'text-anchor':'middle','dominant-baseline':'central',fill:'#254b3c','font-size':27,'font-weight':700},String(i+1));
+}
+wheelElement('circle',{cx:150,cy:150,r:24,fill:'#fff',stroke:'#d9dfd4','stroke-width':2});
+let rotation = 0;
+start.addEventListener('click', () => {
+  if (!begin()) return;
+  try {
+    const selected = randomInt(6);
+    const target = (360 - (selected * 60 + 30)) % 360;
+    rotation += 1440 + (target - rotation % 360 + 360) % 360;
+    wheel.style.transform = `rotate(${rotation}deg)`;
+    setTimeout(() => finish(selected + 1), reducedMotion ? 0 : 2300);
+  } catch (error) { fail(error); }
+});
+</script></body></html>
